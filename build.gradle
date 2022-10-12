@@ -16,9 +16,11 @@ dependencies {
     implementation "org.apache.groovy:groovy-datetime:$groovyVersion"
     implementation "org.apache.groovy:groovy-ginq:$groovyVersion"
     implementation "org.apache.groovy:groovy-macro:$groovyVersion"
+    implementation "org.apache.groovy:groovy-swing:$groovyVersion"
     implementation "org.eclipse.collections:eclipse-collections-api:$eclipseCollectVersion"
     implementation "org.eclipse.collections:eclipse-collections:$eclipseCollectVersion"
-    implementation("org.codehaus.gpars:gpars:1.2.1") {
+    implementation 'org.apache.commons:commons-math3:3.6.1'
+    implementation('org.codehaus.gpars:gpars:1.2.1') {
         transitive false
     }
 }
@@ -29,7 +31,7 @@ description = 'Eclipse Kata Groovy Solutions'
 
 tasks.withType(GroovyCompile).configureEach {
     options.encoding = 'UTF-8'
-    groovyOptions.forkOptions.jvmArgs += ['-Dgroovy.extension.disable=collect,groupBy,countBy']
+    groovyOptions.forkOptions.jvmArgs += ['-Dgroovy.extension.disable=groupBy,countBy']
 }
 
 application {
@@ -38,5 +40,5 @@ application {
 
 tasks.named('run').configure {
     description = "Run 'pets' as a JVM application/Groovy script"
-    jvmArgs += ['-Dgroovy.extension.disable=collect,groupBy,countBy']
+    jvmArgs += ['-Dgroovy.extension.disable=groupBy,countBy']
 }
