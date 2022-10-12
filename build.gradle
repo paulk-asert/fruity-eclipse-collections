@@ -1,0 +1,42 @@
+plugins {
+    id 'groovy'
+    id 'application'
+}
+
+ext.groovyVersion = "4.0.5"
+ext.eclipseCollectVersion = "11.1.0"
+
+repositories {
+    mavenCentral()
+//    mavenLocal()
+}
+
+dependencies {
+    implementation "org.apache.groovy:groovy:$groovyVersion"
+    implementation "org.apache.groovy:groovy-datetime:$groovyVersion"
+    implementation "org.apache.groovy:groovy-ginq:$groovyVersion"
+    implementation "org.apache.groovy:groovy-macro:$groovyVersion"
+    implementation "org.eclipse.collections:eclipse-collections-api:$eclipseCollectVersion"
+    implementation "org.eclipse.collections:eclipse-collections:$eclipseCollectVersion"
+    implementation("org.codehaus.gpars:gpars:1.2.1") {
+        transitive false
+    }
+}
+
+group = 'org.apache.groovy'
+version = '1.0.0-SNAPSHOT'
+description = 'Eclipse Kata Groovy Solutions'
+
+tasks.withType(GroovyCompile).configureEach {
+    options.encoding = 'UTF-8'
+    groovyOptions.forkOptions.jvmArgs += ['-Dgroovy.extension.disable=collect,groupBy,countBy']
+}
+
+application {
+    mainClass = 'pets'
+}
+
+tasks.named('run').configure {
+    description = "Run 'pets' as a JVM application/Groovy script"
+    jvmArgs += ['-Dgroovy.extension.disable=collect,groupBy,countBy']
+}
