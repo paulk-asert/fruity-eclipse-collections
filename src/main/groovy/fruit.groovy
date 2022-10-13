@@ -1,6 +1,7 @@
 import fruit.Fruit
 import groovy.swing.SwingBuilder
 import groovy.transform.Field
+import groovyx.gpars.GParsExecutorsPool
 import org.apache.commons.math3.ml.clustering.DoublePoint
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer
 import org.eclipse.collections.api.factory.Bags
@@ -12,11 +13,12 @@ import tech.tablesaw.api.DoubleColumn
 import tech.tablesaw.api.StringColumn
 import tech.tablesaw.api.Table
 import tech.tablesaw.plotly.Plot
-import tech.tablesaw.plotly.api.*
+import tech.tablesaw.plotly.api.Scatter3DPlot
 
 import javax.imageio.ImageIO
 import java.awt.Color
 import java.awt.image.BufferedImage
+import java.util.concurrent.Executors
 
 import static java.awt.Color.*
 import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE
@@ -47,7 +49,7 @@ Fruit.ALL_EMOJI.chunk(4).with {
 }
 
 // For normal threads, replace next line with "GParsExecutorsPool.withPool { pool ->"
-GParsPool.withExistingPool(Executors.newVirtualThreadPerTaskExecutor()) { pool ->
+GParsExecutorsPool.withExistingPool(Executors.newVirtualThreadPerTaskExecutor()) { pool ->
     var parallelFruit = Fruit.ALL.asParallel(pool, 1)
     var redFruit = parallelFruit.select(fruit -> fruit.color == RED).toList()
     assert redFruit == Lists.mutable.with(Fruit.of('🍎'), Fruit.of('🍒'))
@@ -56,8 +58,8 @@ GParsPool.withExistingPool(Executors.newVirtualThreadPerTaskExecutor()) { pool -
 var results = Fruit.ALL.collect { fruit ->
     var image = ImageIO.read(new File("resources/${fruit.name()}.png"))
 
-    var colors = [:].withDefault{ 0 }
-    var ranges = [:].withDefault{ 0 }
+    var colors = [:].withDefault { 0 }
+    var ranges = [:].withDefault { 0 }
     for (x in 0..<image.width) {
         for (y in 0..<image.height) {
             def (int r, int g, int b) = rgb(image, x, y)
@@ -73,14 +75,14 @@ var results = Fruit.ALL.collect { fruit ->
     def maxColor = range(colors.max { e -> e.value }.key)
 
     int cols = 8, rows = 8
-    int stepX = image.width/cols
-    int stepY = image.height/rows
+    int stepX = image.width / cols
+    int stepY = image.height / rows
     var splitImage = new BufferedImage(image.width + (cols - 1) * 5, image.height + (rows - 1) * 5, image.type)
     var g2a = splitImage.createGraphics()
     var pixelated = new BufferedImage(image.width + (cols - 1) * 5, image.height + (rows - 1) * 5, image.type)
     var g2b = pixelated.createGraphics()
 
-    ranges = [:].withDefault{ 0 }
+    ranges = [:].withDefault { 0 }
     def table = Table.create(DoubleColumn.create('x'),
             DoubleColumn.create('y'),
             DoubleColumn.create('deg'),
@@ -98,19 +100,19 @@ var results = Fruit.ALL.collect { fruit ->
                     table.appendRow().with {
                         setDouble('x', stepX * j + x)
                         setDouble('y', stepY * i + y)
-                        setDouble('deg', (deg + 60) % 360)
+                        setDouble('deg', (deg + 100) % 360)
                         setString('col', COLOR_NAMES[col])
                     }
                 }
             }
             var centroids = clusterer.cluster(data)
-            var biggestCluster = centroids.max{ctrd -> ctrd.points.size() }
+            var biggestCluster = centroids.max { ctrd -> ctrd.points.size() }
             var ctr = biggestCluster.center.point*.intValue()
             var hsb = hsb(*ctr)
             def (_, range) = range(hsb)
             if (range != WHITE) ranges[range]++
-            g2a.drawImage(image, (stepX + 5) * j, (stepY + 5) * i, stepX * (j+1) + 5 * j, stepY * (i+1) + 5 * i,
-                    stepX * j, stepY * i, stepX * (j+1), stepY * (i+1), null)
+            g2a.drawImage(image, (stepX + 5) * j, (stepY + 5) * i, stepX * (j + 1) + 5 * j, stepY * (i + 1) + 5 * i,
+                    stepX * j, stepY * i, stepX * (j + 1), stepY * (i + 1), null)
             g2b.setColor(new Color(*ctr))
             g2b.fillRect((stepX + 5) * j, (stepY + 5) * i, stepX, stepY)
         }
@@ -145,7 +147,7 @@ results.each { fruit, maxRange, maxColor, maxCentroid ->
 
 @Field COLOR_NAMES = BiMaps.immutable.ofAll(
         [WHITE: WHITE, RED: RED, ORANGE: ORANGE, GREEN: GREEN,
-         BLUE: BLUE, YELLOW: YELLOW, MAGENTA: MAGENTA]
+         BLUE : BLUE, YELLOW: YELLOW, MAGENTA: MAGENTA]
 ).inverse()
 
 def hsb(int r, int g, int b) {
