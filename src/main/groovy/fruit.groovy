@@ -1,6 +1,7 @@
 import fruit.Fruit
 import groovy.swing.SwingBuilder
 import groovy.transform.Field
+import groovyx.gpars.GParsPool
 import org.apache.commons.math3.ml.clustering.DoublePoint
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer
 import org.eclipse.collections.api.factory.Bags
@@ -8,10 +9,16 @@ import org.eclipse.collections.api.factory.BiMaps
 import org.eclipse.collections.impl.factory.Lists
 import org.eclipse.collections.impl.factory.Multimaps
 import org.eclipse.collections.impl.factory.Sets
+import tech.tablesaw.api.DoubleColumn
+import tech.tablesaw.api.StringColumn
+import tech.tablesaw.api.Table
+import tech.tablesaw.plotly.Plot
+import tech.tablesaw.plotly.api.*
 
 import javax.imageio.ImageIO
 import java.awt.Color
 import java.awt.image.BufferedImage
+import java.util.concurrent.Executors
 
 import static java.awt.Color.*
 import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE
@@ -34,26 +41,19 @@ assert Fruit.ALL.groupBy(Fruit::getColor) ==
                 .withKeyMultiValues(MAGENTA, Fruit.of('🍇'))
 
 assert Fruit.ALL.countBy(Fruit::getColor) ==
-        Bags.immutable.withOccurrences(
-                RED, 2,
-                YELLOW, 1,
-                ORANGE, 2,
-                MAGENTA, 1
-        )
+        Bags.immutable.withOccurrences(RED, 2, YELLOW, 1, ORANGE, 2, MAGENTA, 1)
 
 assert Fruit.ALL_EMOJI.chunk(4).with {
     first == Lists.mutable.with('🍎', '🍑', '🍌', '🍒')
     last == Lists.mutable.with('🍊', '🍇')
 }
 
-// For virtual threads on JDK19 with preview features enabled,
-// replace the GParsExecutorsPool.withPool line with the following:
-// GParsPool.withExistingPool(Executors.newVirtualThreadPerTaskExecutor()) { pool ->
-//GParsExecutorsPool.withPool { pool ->
-//    var parallelFruit = Fruit.ALL.asParallel(pool, 1)
-//    var redFruit = parallelFruit.select(fruit -> fruit.color == RED).toList()
-//    assert redFruit == Lists.mutable.with(Fruit.of('🍎'), Fruit.of('🍒'))
-//}
+// For normal threads, replace next line with "GParsExecutorsPool.withPool { pool ->"
+GParsPool.withExistingPool(Executors.newVirtualThreadPerTaskExecutor()) { pool ->
+    var parallelFruit = Fruit.ALL.asParallel(pool, 1)
+    var redFruit = parallelFruit.select(fruit -> fruit.color == RED).toList()
+    assert redFruit == Lists.mutable.with(Fruit.of('🍎'), Fruit.of('🍒'))
+}
 
 var results = Fruit.ALL.collect { fruit ->
     var image = ImageIO.read(new File("resources/${fruit.name()}.png"))
@@ -83,20 +83,32 @@ var results = Fruit.ALL.collect { fruit ->
     var g2b = pixelated.createGraphics()
 
     ranges = [:].withDefault{ 0 }
+    def table = Table.create(DoubleColumn.create('x'),
+            DoubleColumn.create('y'),
+            DoubleColumn.create('deg'),
+            StringColumn.create('col'))
     for (i in 0..<rows) {
         for (j in 0..<cols) {
-            def clusterer = new KMeansPlusPlusClusterer(3, 100)
+            def clusterer = new KMeansPlusPlusClusterer(5, 100)
             List<DoublePoint> data = []
             for (x in 0..<stepX) {
                 for (y in 0..<stepY) {
                     def (int r, int g, int b) = rgb(image, stepX * j + x, stepY * i + y)
                     data << new DoublePoint([r, g, b] as int[])
+                    var hsb = hsb(r, g, b)
+                    def (deg, col) = range(hsb)
+                    table.appendRow().tap {
+                        setDouble('x', stepX * j + x)
+                        setDouble('y', stepY * i + y)
+                        setDouble('deg', (deg + 60) % 360)
+                        setString('col', COLOR_NAMES[col])
+                    }
                 }
             }
             var centroids = clusterer.cluster(data)
             var biggestCluster = centroids.max{ctrd -> ctrd.points.size() }
-            int[] ctr = biggestCluster.center.point*.intValue()
-            float[] hsb = hsb(*ctr)
+            var ctr = biggestCluster.center.point*.intValue()
+            var hsb = hsb(*ctr)
             def (_, range) = range(hsb)
             if (range != WHITE) ranges[range]++
             g2a.drawImage(image, (stepX + 5) * j, (stepY + 5) * i, stepX * (j+1) + 5 * j, stepY * (i+1) + 5 * i,
@@ -107,8 +119,14 @@ var results = Fruit.ALL.collect { fruit ->
     }
     g2a.dispose()
     g2b.dispose()
-    var maxCentroid = ranges.max { e -> e.value }.key
+
+
+    def figure = Scatter3DPlot.create('Color vs xy', table, 'x', 'y', 'deg', 'col')
+    println figure.traces[0].context
+    Plot.show(figure)
+
     var swing = new SwingBuilder()
+    var maxCentroid = ranges.max { e -> e.value }.key
     swing.edt {
         frame(title: 'Original', defaultCloseOperation: DISPOSE_ON_CLOSE, pack: true, show: true) {
             flowLayout()
@@ -123,16 +141,16 @@ var results = Fruit.ALL.collect { fruit ->
 
 println "Fruit  Expected      By max color  By max range  By k-means"
 results.each { fruit, maxRange, maxColor, maxCentroid ->
-    println "${fruit.emoji.padRight(6)} ${name(fruit.color)}${name(maxRange)}${name(maxColor)}${name(maxCentroid)}"
+    def colors = [fruit.color, maxColor, maxRange, maxCentroid].collect {
+        COLOR_NAMES[it].padRight(14)
+    }.join().trim()
+    println "${fruit.emoji.padRight(6)} $colors"
 }
 
 @Field COLOR_NAMES = BiMaps.immutable.ofAll(
         [WHITE: WHITE, RED: RED, ORANGE: ORANGE, GREEN: GREEN,
          BLUE: BLUE, YELLOW: YELLOW, MAGENTA: MAGENTA]
 ).inverse()
-def name(color) {
-    COLOR_NAMES[color].padRight(14)
-}
 
 def hsb(int r, int g, int b) {
     float[] hsb = new float[3]
@@ -149,8 +167,8 @@ def rgb(BufferedImage image, int x, int y) {
 }
 
 def range(float[] hsb) {
-    if (hsb[1] < 0.1 && hsb[2] > 0.9) return [-1, WHITE]
-    if (hsb[2] < 0.1) return [-1, BLACK]
+    if (hsb[1] < 0.1 && hsb[2] > 0.9) return [0, WHITE]
+    if (hsb[2] < 0.1) return [0, BLACK]
     long deg = (hsb[0] * 360).round()
     return [deg, range(deg)]
 }
