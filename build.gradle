@@ -5,6 +5,7 @@ plugins {
 
 ext.groovyVersion = "4.0.5"
 ext.eclipseCollectVersion = "11.1.0"
+ext.tablesawVersion = "0.43.1"
 
 repositories {
     mavenCentral()
@@ -20,6 +21,9 @@ dependencies {
     implementation "org.eclipse.collections:eclipse-collections-api:$eclipseCollectVersion"
     implementation "org.eclipse.collections:eclipse-collections:$eclipseCollectVersion"
     implementation 'org.apache.commons:commons-math3:3.6.1'
+    implementation 'org.slf4j:slf4j-simple:2.0.3'
+    implementation "tech.tablesaw:tablesaw-core:$tablesawVersion"
+    implementation "tech.tablesaw:tablesaw-aggregate:$tablesawVersion"
     implementation('org.codehaus.gpars:gpars:1.2.1') {
         transitive false
     }

@@ -1,7 +1,6 @@
 import fruit.Fruit
 import groovy.swing.SwingBuilder
 import groovy.transform.Field
-import groovyx.gpars.GParsPool
 import org.apache.commons.math3.ml.clustering.DoublePoint
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer
 import org.eclipse.collections.api.factory.Bags
@@ -18,7 +17,6 @@ import tech.tablesaw.plotly.api.*
 import javax.imageio.ImageIO
 import java.awt.Color
 import java.awt.image.BufferedImage
-import java.util.concurrent.Executors
 
 import static java.awt.Color.*
 import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE
@@ -43,9 +41,9 @@ assert Fruit.ALL.groupBy(Fruit::getColor) ==
 assert Fruit.ALL.countBy(Fruit::getColor) ==
         Bags.immutable.withOccurrences(RED, 2, YELLOW, 1, ORANGE, 2, MAGENTA, 1)
 
-assert Fruit.ALL_EMOJI.chunk(4).with {
-    first == Lists.mutable.with('🍎', '🍑', '🍌', '🍒')
-    last == Lists.mutable.with('🍊', '🍇')
+Fruit.ALL_EMOJI.chunk(4).with {
+    assert first == Lists.mutable.with('🍎', '🍑', '🍌', '🍒')
+    assert last == Lists.mutable.with('🍊', '🍇')
 }
 
 // For normal threads, replace next line with "GParsExecutorsPool.withPool { pool ->"
@@ -97,7 +95,7 @@ var results = Fruit.ALL.collect { fruit ->
                     data << new DoublePoint([r, g, b] as int[])
                     var hsb = hsb(r, g, b)
                     def (deg, col) = range(hsb)
-                    table.appendRow().tap {
+                    table.appendRow().with {
                         setDouble('x', stepX * j + x)
                         setDouble('y', stepY * i + y)
                         setDouble('deg', (deg + 60) % 360)
@@ -121,9 +119,7 @@ var results = Fruit.ALL.collect { fruit ->
     g2b.dispose()
 
 
-    def figure = Scatter3DPlot.create('Color vs xy', table, 'x', 'y', 'deg', 'col')
-    println figure.traces[0].context
-    Plot.show(figure)
+    Plot.show(Scatter3DPlot.create('Color vs xy', table, 'x', 'y', 'deg', 'col'))
 
     var swing = new SwingBuilder()
     var maxCentroid = ranges.max { e -> e.value }.key
@@ -169,18 +165,18 @@ def rgb(BufferedImage image, int x, int y) {
 def range(float[] hsb) {
     if (hsb[1] < 0.1 && hsb[2] > 0.9) return [0, WHITE]
     if (hsb[2] < 0.1) return [0, BLACK]
-    long deg = (hsb[0] * 360).round()
+    int deg = (hsb[0] * 360).round()
     return [deg, range(deg)]
 }
 
-def range(long deg) {
+def range(int deg) {
     switch (deg) {
-        case { deg >= 0 && deg < 16 } -> RED
-        case { deg >= 16 && deg < 35 } -> ORANGE
-        case { deg >= 35 && deg < 75 } -> YELLOW
-        case { deg >= 75 && deg < 160 } -> GREEN
-        case { deg >= 160 && deg < 250 } -> BLUE
-        case { deg >= 250 && deg < 330 } -> MAGENTA
+        case 0..<16 -> RED
+        case 16..<35 -> ORANGE
+        case 35..<75 -> YELLOW
+        case 75..<160 -> GREEN
+        case 160..<250 -> BLUE
+        case 250..<330 -> MAGENTA
         default -> RED
     }
 }
