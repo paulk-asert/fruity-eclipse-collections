@@ -1,5 +1,7 @@
 # fruity-eclipse-collections
 
+![Fruit](./docs/images/fruit_emoji.png)
+
 A Groovy script inspired by:
 https://github.com/eclipse/eclipse-collections-kata/tree/master/top-methods-kata-solutions
 
