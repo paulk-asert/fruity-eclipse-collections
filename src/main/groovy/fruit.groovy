@@ -12,13 +12,20 @@ import org.eclipse.collections.impl.factory.Sets
 import tech.tablesaw.api.DoubleColumn
 import tech.tablesaw.api.StringColumn
 import tech.tablesaw.api.Table
+import tech.tablesaw.plotly.components.Axis
+import tech.tablesaw.plotly.components.Figure
+import tech.tablesaw.plotly.components.Layout
+import tech.tablesaw.plotly.components.Marker
+
 import tech.tablesaw.plotly.Plot
 import tech.tablesaw.plotly.api.Scatter3DPlot
+import tech.tablesaw.plotly.components.threeD.Scene
+import tech.tablesaw.plotly.traces.Scatter3DTrace
 
 import javax.imageio.ImageIO
 import java.awt.Color
 import java.awt.image.BufferedImage
-import java.util.concurrent.Executors
+//import java.util.concurrent.Executors
 
 import static java.awt.Color.*
 import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE
@@ -48,8 +55,9 @@ Fruit.ALL_EMOJI.chunk(4).with {
     assert last == Lists.mutable.with('🍊', '🍇')
 }
 
-// For normal threads, replace next line with "GParsExecutorsPool.withPool { pool ->"
-GParsExecutorsPool.withExistingPool(Executors.newVirtualThreadPerTaskExecutor()) { pool ->
+// For virtual threads, replace next line with:
+// GParsExecutorsPool.withExistingPool(Executors.newVirtualThreadPerTaskExecutor()) { pool ->
+GParsExecutorsPool.withPool { pool ->
     var parallelFruit = Fruit.ALL.asParallel(pool, 1)
     var redFruit = parallelFruit.select(fruit -> fruit.color == RED).toList()
     assert redFruit == Lists.mutable.with(Fruit.of('🍎'), Fruit.of('🍒'))
@@ -65,7 +73,7 @@ var results = Fruit.ALL.collect { fruit ->
             def (int r, int g, int b) = rgb(image, x, y)
             float[] hsb = hsb(r, g, b)
             def (deg, range) = range(hsb)
-            if (range !in [WHITE, BLACK]) {
+            if (range != WHITE) { // ignore white background
                 ranges[range]++
                 colors[deg]++
             }
@@ -83,10 +91,15 @@ var results = Fruit.ALL.collect { fruit ->
     var g2b = pixelated.createGraphics()
 
     ranges = [:].withDefault { 0 }
-    def table = Table.create(DoubleColumn.create('x'),
+    def xyTable = Table.create(DoubleColumn.create('x'),
             DoubleColumn.create('y'),
             DoubleColumn.create('deg'),
             StringColumn.create('col'))
+    def rgbTable = Table.create(DoubleColumn.create('r'),
+            DoubleColumn.create('g'),
+            DoubleColumn.create('b'),
+            StringColumn.create('col'))
+    List<DoublePoint> allData = []
     for (i in 0..<rows) {
         for (j in 0..<cols) {
             def clusterer = new KMeansPlusPlusClusterer(5, 100)
@@ -94,10 +107,22 @@ var results = Fruit.ALL.collect { fruit ->
             for (x in 0..<stepX) {
                 for (y in 0..<stepY) {
                     def (int r, int g, int b) = rgb(image, stepX * j + x, stepY * i + y)
-                    data << new DoublePoint([r, g, b] as int[])
+                    var dp = new DoublePoint([r, g, b] as int[])
                     var hsb = hsb(r, g, b)
                     def (deg, col) = range(hsb)
-                    table.appendRow().with {
+                    data << dp
+                    if (col != WHITE) {
+                        allData << dp
+                    }
+                    if (col != WHITE) {
+                        rgbTable.appendRow().with {
+                            setDouble('r', r)
+                            setDouble('g', g)
+                            setDouble('b', b)
+                            setString('col', "rgb($r,$g,$b)")
+                        }
+                    }
+                    xyTable.appendRow().with {
                         setDouble('x', stepX * j + x)
                         setDouble('y', stepY * i + y)
                         setDouble('deg', (deg + 100) % 360)
@@ -120,8 +145,24 @@ var results = Fruit.ALL.collect { fruit ->
     g2a.dispose()
     g2b.dispose()
 
+    def clusterer = new KMeansPlusPlusClusterer(3, 100)
+    var centroids = clusterer.cluster(allData)
+    centroids*.center.each { ctr ->
+        rgbTable.appendRow().with {
+            setDouble('r', ctr.point[0])
+            setDouble('g', ctr.point[1])
+            setDouble('b', ctr.point[2])
+            setString('col', "rgb(0,0,0)")
+        }
 
-    Plot.show(Scatter3DPlot.create('Color vs xy', table, 'x', 'y', 'deg', 'col'))
+    }
+
+    var marker = Marker.builder().color(rgbTable.column('col').asObjectArray()).size(20).opacity(0.8).build()
+    var trace = Scatter3DTrace.builder(rgbTable.column('r'), rgbTable.column('g'), rgbTable.column('b')).marker(marker).build()
+    Layout layout = standardLayout("RGB in 3D for ${fruit.name()}", 'r', 'g', 'b', false);
+
+    Plot.show(Figure.builder().addTraces(trace).layout(layout).build())
+    Plot.show(Scatter3DPlot.create('Color vs xy', xyTable, 'x', 'y', 'deg', 'col'))
 
     var swing = new SwingBuilder()
     var maxCentroid = ranges.max { e -> e.value }.key
@@ -181,4 +222,19 @@ def range(int deg) {
         case 250..<330 -> MAGENTA
         default -> RED
     }
+}
+
+def standardLayout(String title, String xCol, String yCol, String zCol, boolean showLegend) {
+    Layout.builder()
+            .title(title)
+            .height(800)
+            .width(1000)
+            .showLegend(showLegend)
+            .scene(
+                    Scene.sceneBuilder()
+                            .xAxis(Axis.builder().title(xCol).build())
+                            .yAxis(Axis.builder().title(yCol).build())
+                            .zAxis(Axis.builder().title(zCol).build())
+                            .build())
+            .build()
 }
