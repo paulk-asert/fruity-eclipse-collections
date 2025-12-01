@@ -31,6 +31,12 @@ assert expected == Fruit.values()
         .groupBy{ c, f -> c }
         .collectEntries{ k, v -> [k, v*.get(1)] }
 
+var allColors = Fruit.values()*.colors.sum().toSet()
+assert expected == [allColors, Fruit.values()].combinations()
+    .findAll{ c, f -> c in f.colors }
+    .groupBy{ c, f -> c }
+    .collectEntries{ k, v -> [k, v*.get(1)] }
+
 assert expected == GQL {
     from f in Fruit.values()
     crossjoin c in Fruit.values()*.colors.sum().toSet()
