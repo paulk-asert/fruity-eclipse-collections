@@ -60,6 +60,22 @@ assert Fruit.ALL.groupBy(Fruit::getColor) ==
                 .withKeyMultiValues(ORANGE, Fruit.of('🍑'), Fruit.of('🍊'))
                 .withKeyMultiValues(MAGENTA, Fruit.of('🍇'))
 
+assert Fruit.ALL.groupBy(Fruit::getColors) ==
+        Multimaps.mutable.list.empty()
+                .withKeyMultiValues([RED, GREEN], Fruit.of('🍎'))
+                .withKeyMultiValues([RED], Fruit.of('🍒'))
+                .withKeyMultiValues([ORANGE], Fruit.of('🍑'), Fruit.of('🍊'))
+                .withKeyMultiValues([YELLOW, GREEN], Fruit.of('🍌'))
+                .withKeyMultiValues([MAGENTA, GREEN], Fruit.of('🍇'))
+
+assert Fruit.ALL.groupByEach(Fruit::getColors) ==
+        Multimaps.mutable.list.empty()
+                .withKeyMultiValues(GREEN, Fruit.of('🍎'), Fruit.of('🍌'), Fruit.of('🍇'))
+                .withKeyMultiValues(RED, Fruit.of('🍎'), Fruit.of('🍒'))
+                .withKeyMultiValues(ORANGE, Fruit.of('🍑'), Fruit.of('🍊'))
+                .withKeyMultiValues(YELLOW, Fruit.of('🍌'))
+                .withKeyMultiValues(MAGENTA, Fruit.of('🍇'))
+
 assert Fruit.ALL.countBy(Fruit::getColor) ==
         Bags.immutable.withOccurrences(RED, 2, YELLOW, 1, ORANGE, 2, MAGENTA, 1)
 

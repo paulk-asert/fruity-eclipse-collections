@@ -1,0 +1,27 @@
+plugins {
+    id 'groovy'
+    id 'application'
+}
+
+ext.groovyVersion = '6.0.0-SNAPSHOT'
+ext.eclipseCollectVersion = '13.0.0'
+ext.tablesawVersion = '0.44.4'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation "org.apache.groovy:groovy:$groovyVersion"
+    implementation "org.apache.groovy:groovy-ginq:$groovyVersion"
+    implementation "org.apache.groovy:groovy-swing:$groovyVersion"
+}
+
+application {
+    mainClass = 'FruitGroups'
+}
+
+tasks.named('run').configure {
+    description = "Run 'FruitColors' as a JVM application/Groovy script"
+}

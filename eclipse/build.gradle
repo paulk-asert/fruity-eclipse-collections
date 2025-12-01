@@ -1,0 +1,42 @@
+plugins {
+    id 'groovy'
+    id 'application'
+}
+
+ext.groovyVersion = '5.0.2'
+ext.eclipseCollectVersion = '13.0.0'
+ext.tablesawVersion = '0.44.4'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation "org.apache.groovy:groovy:$groovyVersion"
+    implementation "org.apache.groovy:groovy-swing:$groovyVersion"
+    implementation "org.eclipse.collections:eclipse-collections-api:$eclipseCollectVersion"
+    implementation "org.eclipse.collections:eclipse-collections:$eclipseCollectVersion"
+    implementation 'org.apache.commons:commons-math3:3.6.1'
+    implementation "tech.tablesaw:tablesaw-core:$tablesawVersion"
+    implementation "tech.tablesaw:tablesaw-aggregate:$tablesawVersion"
+    implementation 'org.plotly-scala:plotly-render_2.13:0.8.5'
+    implementation('org.codehaus.gpars:gpars:1.2.1') {
+        transitive false
+    }
+    runtimeOnly 'org.slf4j:slf4j-simple:2.0.17'
+}
+
+tasks.withType(GroovyCompile).configureEach {
+    options.encoding = 'UTF-8'
+    groovyOptions.forkOptions.jvmArgs += ['-Dgroovy.extension.disable=groupBy,countBy']
+}
+
+application {
+    mainClass = 'FruitColors'
+}
+
+tasks.named('run').configure {
+    description = "Run 'FruitColors' as a JVM application/Groovy script"
+    jvmArgs += ['-Dgroovy.extension.disable=groupBy,countBy']
+}
