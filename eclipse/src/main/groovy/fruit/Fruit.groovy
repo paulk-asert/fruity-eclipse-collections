@@ -1,10 +1,12 @@
 package fruit
 
+import groovy.transform.TupleConstructor
 import org.eclipse.collections.api.factory.Lists
 import org.eclipse.collections.api.list.ImmutableList
 
 import java.awt.Color
 
+@TupleConstructor
 enum Fruit {
     APPLE('🍎', Color.RED, [Color.RED, Color.GREEN]),
     PEACH('🍑', Color.ORANGE, [Color.ORANGE]),
@@ -18,12 +20,6 @@ enum Fruit {
     final String emoji
     final Color color
     final List<Color> colors
-
-    Fruit(String emoji, Color color, List<Color> colors) {
-        this.emoji = emoji
-        this.color = color
-        this.colors = colors
-    }
 
     static Fruit of(String emoji) {
         values().find{it.emoji == emoji }
