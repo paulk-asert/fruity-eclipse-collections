@@ -16,6 +16,9 @@
 
 import fruit.Fruit
 
+import java.awt.Color
+import java.util.stream.Collectors
+
 import static java.awt.Color.*
 
 var expected = [
@@ -31,11 +34,24 @@ assert expected == Fruit.values()
         .groupBy{ c, f -> c }
         .collectEntries{ k, v -> [k, v*.get(1)] }
 
+// alternative using combinations
 var allColors = Fruit.values()*.colors.sum().toSet()
 assert expected == [allColors, Fruit.values()].combinations()
     .findAll{ c, f -> c in f.colors }
     .groupBy{ c, f -> c }
     .collectEntries{ k, v -> [k, v*.get(1)] }
+
+// alternative using streams
+assert expected == Fruit.values().stream()
+    .mapMulti((fruit, consumer) -> {
+        for (Color color : fruit.colors) {
+            consumer.accept(Map.entry(color, fruit))
+        }
+    })
+    .collect(Collectors.groupingBy(
+            Map.Entry::getKey,
+            Collectors.mapping(Map.Entry::getValue, Collectors.toList())
+    ))
 
 assert expected == GQL {
     from f in Fruit.values()

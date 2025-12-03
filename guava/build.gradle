@@ -19,7 +19,7 @@ plugins {
 }
 
 ext.groovyVersion = '6.0.0-SNAPSHOT'
-ext.eclipseCollectVersion = '13.0.0'
+ext.guavaVersion = '33.5.0-jre'
 
 repositories {
     mavenCentral()
@@ -28,7 +28,7 @@ repositories {
 
 dependencies {
     implementation "org.apache.groovy:groovy:$groovyVersion"
-    implementation "org.apache.groovy:groovy-ginq:$groovyVersion"
+    implementation "com.google.guava:guava:$guavaVersion"
 }
 
 application {

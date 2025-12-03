@@ -84,6 +84,13 @@ Fruit.ALL_EMOJI.chunk(4).with {
     assert last == Lists.mutable.with('🍊', '🍇')
 }
 
+var fruitColors = Multimaps.mutable.set.empty()
+fruitColors.putAll('red', ['🍒', '🍎'])
+fruitColors.putAll('green', ['🍎', '🍌', '🥑'])
+fruitColors.put('yellow', '🍌')
+println fruitColors
+println fruitColors.flip()
+
 // For virtual threads, replace next line with:
 // GParsExecutorsPool.withExistingPool(Executors.newVirtualThreadPerTaskExecutor()) { pool ->
 GParsExecutorsPool.withPool { pool ->

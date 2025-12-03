@@ -13,28 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id 'groovy'
-    id 'application'
-}
+package fruit
 
-ext.groovyVersion = '6.0.0-SNAPSHOT'
-ext.eclipseCollectVersion = '13.0.0'
+import groovy.transform.TupleConstructor
 
-repositories {
-    mavenCentral()
-    mavenLocal()
-}
+import java.awt.Color
 
-dependencies {
-    implementation "org.apache.groovy:groovy:$groovyVersion"
-    implementation "org.apache.groovy:groovy-ginq:$groovyVersion"
-}
+@TupleConstructor
+enum Fruit {
+    APPLE('🍎', Color.RED, [Color.RED, Color.GREEN]),
+    PEACH('🍑', Color.ORANGE, [Color.ORANGE]),
+    BANANA('🍌', Color.YELLOW, [Color.YELLOW, Color.GREEN]),
+    CHERRY('🍒', Color.RED, [Color.RED]),
+    ORANGE('🍊', Color.ORANGE, [Color.ORANGE]),
+    GRAPE('🍇', Color.MAGENTA, [Color.MAGENTA, Color.GREEN])
 
-application {
-    mainClass = 'FruitGroups'
-}
+    final String emoji
+    final Color color
+    final List<Color> colors
 
-tasks.named('run').configure {
-    description = "Run 'FruitGroups' as a JVM application/Groovy script"
+    static Fruit of(String emoji) {
+        values().find{it.emoji == emoji }
+    }
 }

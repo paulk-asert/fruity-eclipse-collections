@@ -13,28 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id 'groovy'
-    id 'application'
-}
 
-ext.groovyVersion = '6.0.0-SNAPSHOT'
-ext.eclipseCollectVersion = '13.0.0'
+import com.google.common.collect.HashMultimap
+import com.google.common.collect.Multimaps
 
-repositories {
-    mavenCentral()
-    mavenLocal()
-}
+def fruitColors = HashMultimap.create()
+fruitColors.putAll("red",    ["🍒", "🍎"])
+fruitColors.putAll("green",  ["🍎", "🍌", "🥑"])
+fruitColors.put("yellow", "🍌")
+println fruitColors
 
-dependencies {
-    implementation "org.apache.groovy:groovy:$groovyVersion"
-    implementation "org.apache.groovy:groovy-ginq:$groovyVersion"
-}
-
-application {
-    mainClass = 'FruitGroups'
-}
-
-tasks.named('run').configure {
-    description = "Run 'FruitGroups' as a JVM application/Groovy script"
-}
+def flipped = HashMultimap.create()
+Multimaps.invertFrom(fruitColors, flipped)
+println flipped
