@@ -18,13 +18,12 @@ plugins {
     id 'application'
 }
 
-ext.groovyVersion = '5.0.2'
+ext.groovyVersion = '5.0.3'
 ext.eclipseCollectVersion = '13.0.0'
 ext.tablesawVersion = '0.44.4'
 
 repositories {
     mavenCentral()
-    mavenLocal()
 }
 
 dependencies {

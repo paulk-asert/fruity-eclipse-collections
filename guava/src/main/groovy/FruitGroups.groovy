@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-import com.google.common.collect.HashMultimap
-import com.google.common.collect.Multimaps
+import com.google.common.collect.ImmutableMultimap
 
-def fruitColors = HashMultimap.create()
-fruitColors.putAll("red",    ["🍒", "🍎"])
-fruitColors.putAll("green",  ["🍎", "🍌", "🥑"])
-fruitColors.put("yellow", "🍌")
+def fruitColors = new ImmutableMultimap.Builder<String, String>()
+    .putAll("red", ["🍒", "🍎"])
+    .putAll("green", ["🍎", "🍌", "🥑"])
+    .put("yellow", "🍌")
+    .build()
 println fruitColors
-
-def flipped = HashMultimap.create()
-Multimaps.invertFrom(fruitColors, flipped)
-println flipped
+println fruitColors.inverse()
